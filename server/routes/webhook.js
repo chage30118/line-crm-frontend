@@ -9,45 +9,25 @@ import { middleware, Client } from '@line/bot-sdk'
 
 const router = express.Router()
 
-// LINE Client（延遲初始化）
-let lineClient = null
-
-function getLineClient() {
-  if (!lineClient) {
-    const config = {
-      channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
-      channelSecret: process.env.LINE_CHANNEL_SECRET
-    }
-    
-    if (!config.channelAccessToken || !config.channelSecret) {
-      throw new Error('LINE 環境變數未設定：LINE_CHANNEL_ACCESS_TOKEN, LINE_CHANNEL_SECRET')
-    }
-    
-    lineClient = new Client(config)
-  }
-  return lineClient
+// LINE 設定
+const config = {
+  channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
+  channelSecret: process.env.LINE_CHANNEL_SECRET
 }
+
+// LINE Client
+const lineClient = new Client(config)
 
 /**
  * POST /webhook
  * 接收 LINE Webhook 事件
+ * 
+ * ⚠️ 使用 LINE SDK 的 middleware 自動處理：
+ * 1. 簽章驗證
+ * 2. Body 解析
+ * 3. 將事件掛載到 req.body.events
  */
-router.post('/', (req, res, next) => {
-  // 動態建立 middleware
-  const middlewareConfig = {
-    channelSecret: process.env.LINE_CHANNEL_SECRET
-  }
-  
-  if (!middlewareConfig.channelSecret) {
-    return res.status(500).json({
-      success: false,
-      error: '環境變數 LINE_CHANNEL_SECRET 未設定'
-    })
-  }
-  
-  // 執行 LINE 的簽章驗證 middleware
-  middleware(middlewareConfig)(req, res, next)
-}, async (req, res) => {
+router.post('/', middleware(config), async (req, res) => {
   try {
     const events = req.body.events
     

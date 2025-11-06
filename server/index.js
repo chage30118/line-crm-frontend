@@ -47,7 +47,10 @@ app.use(cors({
   credentials: true
 }))
 
-// 解析 JSON
+// ⚠️ Webhook 必須在 express.json() 之前處理（需要 raw body 驗證簽章）
+app.use('/webhook', webhookRouter)
+
+// 解析 JSON（其他 API 路由使用）
 app.use(express.json())
 
 // 日誌（開發環境使用）
@@ -60,7 +63,6 @@ if (isDevelopment) {
 app.use('/api/health', healthRouter)
 app.use('/api/users', usersRouter)
 app.use('/api/debug', debugRouter)
-app.use('/webhook', webhookRouter)
 
 // ===== 前端靜態檔案（生產環境） =====
 

@@ -26,7 +26,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useCustomersStore } from '@/stores/customers'
 import { useUIStore } from '@/stores/ui'
@@ -41,9 +41,17 @@ const uiStore = useUIStore()
 const { selectedCustomerId } = storeToRefs(customersStore)
 const { crmSidebarVisible, sidebarCollapsed } = storeToRefs(uiStore)
 
-// 初始化載入客戶列表
+// 初始化載入客戶列表並訂閱即時更新
 onMounted(() => {
   customersStore.fetchCustomers()
+  customersStore.subscribeToRealtimeUpdates()
+  console.log('[Dashboard] 已啟用 Realtime 即時更新')
+})
+
+// 頁面卸載時取消訂閱
+onUnmounted(() => {
+  customersStore.unsubscribeFromRealtimeUpdates()
+  console.log('[Dashboard] 已取消 Realtime 訂閱')
 })
 </script>
 

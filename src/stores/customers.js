@@ -7,7 +7,8 @@ export const useCustomersStore = defineStore('customers', {
     loading: false,
     selectedCustomerId: null,
     searchKeyword: '',
-    filterTag: ''
+    filterTag: '',
+    realtimeChannel: null // Realtime 訂閱頻道
   }),
 
   getters: {
@@ -89,9 +90,45 @@ export const useCustomersStore = defineStore('customers', {
      * 選擇客戶
      * @param {string} customerId - 客戶 ID
      */
-    selectCustomer(customerId) {
+    async selectCustomer(customerId) {
       console.log('選擇客戶:', customerId)
       this.selectedCustomerId = customerId
+      
+      // 標記該客戶的訊息為已讀
+      const customer = this.customers.find(c => c.id === customerId)
+      if (customer && customer.unread_count > 0) {
+        await this.markAsRead(customerId)
+      }
+    },
+    
+    /**
+     * 標記客戶訊息為已讀
+     * @param {string} customerId - 客戶 ID
+     */
+    async markAsRead(customerId) {
+      try {
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002'
+        const response = await fetch(`${backendUrl}/api/users/${customerId}/mark-read`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (!response.ok) {
+          throw new Error('標記已讀失敗')
+        }
+        
+        // 更新本地狀態
+        const index = this.customers.findIndex(c => c.id === customerId)
+        if (index !== -1) {
+          this.customers[index].unread_count = 0
+        }
+        
+        console.log('已標記為已讀:', customerId)
+      } catch (error) {
+        console.error('標記已讀失敗:', error)
+      }
     },
 
     /**
@@ -146,6 +183,88 @@ export const useCustomersStore = defineStore('customers', {
     clearFilters() {
       this.searchKeyword = ''
       this.filterTag = ''
+    },
+    
+    /**
+     * 訂閱 Realtime 更新
+     */
+    subscribeToRealtimeUpdates() {
+      // 避免重複訂閱
+      if (this.realtimeChannel) {
+        console.log('[Realtime] 已存在訂閱，略過')
+        return
+      }
+      
+      console.log('[Realtime] 開始訂閱客戶資料變更...')
+      
+      // 訂閱 users 表的變更
+      this.realtimeChannel = supabase
+        .channel('users-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*', // INSERT, UPDATE, DELETE
+            schema: 'public',
+            table: 'users'
+          },
+          (payload) => {
+            console.log('[Realtime] 收到 users 變更:', payload)
+            this.handleUserChange(payload)
+          }
+        )
+        .subscribe((status) => {
+          console.log('[Realtime] 訂閱狀態:', status)
+        })
+    },
+    
+    /**
+     * 處理用戶資料變更
+     */
+    handleUserChange(payload) {
+      const { eventType, new: newRecord, old: oldRecord } = payload
+      
+      switch (eventType) {
+        case 'INSERT':
+          // 新增用戶
+          console.log('[Realtime] 新增用戶:', newRecord.display_name)
+          this.customers.unshift(newRecord)
+          break
+          
+        case 'UPDATE':
+          // 更新用戶
+          const updateIndex = this.customers.findIndex(c => c.id === newRecord.id)
+          if (updateIndex !== -1) {
+            console.log('[Realtime] 更新用戶:', newRecord.display_name)
+            this.customers[updateIndex] = newRecord
+            
+            // 如果有新訊息（last_message_at 變更），移到最上面
+            if (newRecord.last_message_at !== oldRecord?.last_message_at) {
+              const [updatedCustomer] = this.customers.splice(updateIndex, 1)
+              this.customers.unshift(updatedCustomer)
+            }
+          }
+          break
+          
+        case 'DELETE':
+          // 刪除用戶
+          const deleteIndex = this.customers.findIndex(c => c.id === oldRecord.id)
+          if (deleteIndex !== -1) {
+            console.log('[Realtime] 刪除用戶:', oldRecord.display_name)
+            this.customers.splice(deleteIndex, 1)
+          }
+          break
+      }
+    },
+    
+    /**
+     * 取消訂閱 Realtime
+     */
+    unsubscribeFromRealtimeUpdates() {
+      if (this.realtimeChannel) {
+        console.log('[Realtime] 取消訂閱')
+        supabase.removeChannel(this.realtimeChannel)
+        this.realtimeChannel = null
+      }
     }
   }
 })

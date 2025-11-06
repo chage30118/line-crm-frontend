@@ -15,7 +15,10 @@
     "restore-db": "node scripts/restore-database.js",
     "test-migration": "node scripts/test-migration.js",
     "check-storage": "node scripts/check-storage.js",
-    "check-deploy": "node scripts/check-deployment.js"
+    "check-deploy": "node scripts/check-deployment.js",
+    "check-unread": "node scripts/check-unread.js",
+    "test-unread": "node scripts/test-unread-badge.js",
+    "clear-unread": "node scripts/test-unread-badge.js --clear"
   },
   "keywords": [
     "vue",

@@ -120,7 +120,8 @@ async function handleMessageEvent(event) {
           line_user_id: userId,
           first_message_at: timestamp,
           last_message_at: timestamp,
-          message_count: 1
+          message_count: 1,
+          unread_count: 1
         })
         .select('id')
         .single()
@@ -138,14 +139,23 @@ async function handleMessageEvent(event) {
     } else if (userError) {
       throw new Error(`查詢用戶失敗: ${userError.message}`)
     } else {
-      // 用戶已存在，更新最後訊息時間和計數
-      await supabase
+      // 用戶已存在，更新最後訊息時間、訊息計數、未讀計數
+      const { data: userData, error: updateError } = await supabase
         .from('users')
-        .update({
-          last_message_at: timestamp,
-          message_count: supabase.rpc('increment', { row_id: user.id })
-        })
+        .select('message_count, unread_count')
         .eq('id', user.id)
+        .single()
+      
+      if (!updateError) {
+        await supabase
+          .from('users')
+          .update({
+            last_message_at: timestamp,
+            message_count: (userData.message_count || 0) + 1,
+            unread_count: (userData.unread_count || 0) + 1
+          })
+          .eq('id', user.id)
+      }
     }
     
     // 2. 儲存訊息

@@ -198,4 +198,44 @@ router.post('/batch-refresh', async (req, res) => {
   res.json(results)
 })
 
+/**
+ * POST /api/users/:userId/mark-read
+ * 標記用戶的訊息為已讀（清除未讀計數）
+ */
+router.post('/:userId/mark-read', async (req, res) => {
+  const { userId } = req.params
+  
+  console.log(`[標記已讀] 用戶 ID: ${userId}`)
+  
+  const db = getSupabase()
+  
+  try {
+    const { error } = await db
+      .from('users')
+      .update({ 
+        unread_count: 0,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', parseInt(userId))
+    
+    if (error) {
+      throw error
+    }
+    
+    console.log(`[標記已讀] 成功清除未讀計數: ${userId}`)
+    
+    res.json({
+      success: true,
+      message: '已標記為已讀'
+    })
+    
+  } catch (error) {
+    console.error('[標記已讀] 錯誤:', error)
+    res.status(500).json({
+      success: false,
+      error: error.message
+    })
+  }
+})
+
 export default router

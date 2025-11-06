@@ -26,6 +26,7 @@ const __dirname = path.dirname(__filename)
 import webhookRouter from './routes/webhook.js'
 import usersRouter from './routes/users.js'
 import healthRouter from './routes/health.js'
+import debugRouter from './routes/debug.js'
 
 const app = express()
 const PORT = process.env.PORT || 3002
@@ -58,6 +59,7 @@ if (isDevelopment) {
 
 app.use('/api/health', healthRouter)
 app.use('/api/users', usersRouter)
+app.use('/api/debug', debugRouter)
 app.use('/webhook', webhookRouter)
 
 // ===== 前端靜態檔案（生產環境） =====

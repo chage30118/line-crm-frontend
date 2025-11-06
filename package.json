@@ -14,7 +14,8 @@
     "backup-db": "node scripts/backup-database.js",
     "restore-db": "node scripts/restore-database.js",
     "test-migration": "node scripts/test-migration.js",
-    "check-storage": "node scripts/check-storage.js"
+    "check-storage": "node scripts/check-storage.js",
+    "check-deploy": "node scripts/check-deployment.js"
   },
   "keywords": [
     "vue",
@@ -24,6 +25,10 @@
   ],
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
     "@line/bot-sdk": "^9.4.0",

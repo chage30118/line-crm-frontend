@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(test:*)",
+      "Bash(cd:*)",
+      "Bash(npm init:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(ping:*)",
+      "Bash(nul)",
+      "Bash(dir /s /b src*.js src*.vue 2)",
+      "Bash(findstr:*)",
+      "Bash(if not exist \"D:\\line-crm-frontend\\configs\" mkdir \"D:\\line-crm-frontend\\configs\")",
+      "Bash(npm run verify-db:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 自訂樣式 */
+body {
+  margin: 0;
+  font-family: 'Microsoft JhengHei', 'Segoe UI', sans-serif;
+}
+
+#app {
+  height: 100vh;
+}
+
+/* 捲軸樣式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Element Plus 樣式覆寫 */
+.el-message-box {
+  font-family: 'Microsoft JhengHei', 'Segoe UI', sans-serif;
+}

@@ -1,0 +1,62 @@
+{
+  "timestamp": "2025-11-06T01:21:30.811Z",
+  "summary": {
+    "totalTables": 4,
+    "existingTables": 4,
+    "missingTables": 0,
+    "tablesWithIssues": 3
+  },
+  "tables": {
+    "users": {
+      "exists": true,
+      "expectedColumns": 18,
+      "actualColumns": 10,
+      "count": 684,
+      "missingColumns": [
+        "customer_name",
+        "suggested_name",
+        "first_message_at",
+        "last_message_at",
+        "message_count",
+        "tags",
+        "notes",
+        "unread_count"
+      ],
+      "extraColumns": [],
+      "error": null
+    },
+    "messages": {
+      "exists": true,
+      "expectedColumns": 14,
+      "actualColumns": 13,
+      "count": 3704,
+      "missingColumns": [
+        "file_path"
+      ],
+      "extraColumns": [],
+      "error": null
+    },
+    "message_limits": {
+      "exists": true,
+      "expectedColumns": 7,
+      "actualColumns": 7,
+      "count": 2,
+      "missingColumns": [],
+      "extraColumns": [],
+      "error": null
+    },
+    "system_stats": {
+      "exists": true,
+      "expectedColumns": 4,
+      "actualColumns": 4,
+      "count": 3,
+      "missingColumns": [
+        "updated_at"
+      ],
+      "extraColumns": [
+        "last_updated"
+      ],
+      "error": null
+    }
+  }
+}

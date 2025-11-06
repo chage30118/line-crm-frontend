@@ -8,15 +8,32 @@
 
       <!-- 圖片訊息 -->
       <el-image
-        v-if="message.message_type === 'image' && message.file_url"
-        :src="message.file_url"
-        :preview-src-list="[message.file_url]"
+        v-if="message.message_type === 'image' && message.file_path"
+        :src="message.file_path"
+        :preview-src-list="[message.file_path]"
         fit="cover"
         class="message-image"
+        lazy
+      />
+
+      <!-- 影片訊息 -->
+      <video
+        v-if="message.message_type === 'video' && message.file_path"
+        :src="message.file_path"
+        controls
+        class="message-video"
+      />
+
+      <!-- 音訊訊息 -->
+      <audio
+        v-if="message.message_type === 'audio' && message.file_path"
+        :src="message.file_path"
+        controls
+        class="message-audio"
       />
 
       <!-- 檔案訊息 -->
-      <div v-if="message.file_name && message.message_type !== 'image'" class="message-file">
+      <div v-if="message.file_name && message.message_type === 'file'" class="message-file">
         <el-icon><Document /></el-icon>
         <span>{{ message.file_name }}</span>
         <el-button :icon="'Download'" size="small" text @click="downloadFile">
@@ -50,8 +67,8 @@ const messageDirection = computed(() => {
 
 // 下載檔案
 const downloadFile = () => {
-  if (props.message.file_url) {
-    window.open(props.message.file_url, '_blank')
+  if (props.message.file_path) {
+    window.open(props.message.file_path, '_blank')
   }
 }
 </script>
@@ -100,6 +117,17 @@ const downloadFile = () => {
   max-height: 300px;
   border-radius: 8px;
   cursor: pointer;
+}
+
+.message-video {
+  max-width: 400px;
+  max-height: 300px;
+  border-radius: 8px;
+}
+
+.message-audio {
+  width: 300px;
+  border-radius: 8px;
 }
 
 .message-file {

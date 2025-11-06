@@ -10,16 +10,26 @@ import { createClient } from '@supabase/supabase-js'
 
 const router = express.Router()
 
-// LINE 設定
-const config = {
-  channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
-  channelSecret: process.env.LINE_CHANNEL_SECRET
+// LINE Client（延遲初始化）
+let lineClient = null
+
+function getLineClient() {
+  if (!lineClient) {
+    const config = {
+      channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
+      channelSecret: process.env.LINE_CHANNEL_SECRET
+    }
+    
+    if (!config.channelAccessToken || !config.channelSecret) {
+      throw new Error('LINE 環境變數未設定')
+    }
+    
+    lineClient = new Client(config)
+  }
+  return lineClient
 }
 
-// LINE Client
-const lineClient = new Client(config)
-
-// Supabase Client
+// Supabase Client（延遲初始化）
 let supabase = null
 
 function getSupabase() {
@@ -41,7 +51,21 @@ function getSupabase() {
  * 2. Body 解析
  * 3. 將事件掛載到 req.body.events
  */
-router.post('/', middleware(config), async (req, res) => {
+router.post('/', (req, res, next) => {
+  // 動態建立 middleware（延遲初始化）
+  const config = {
+    channelSecret: process.env.LINE_CHANNEL_SECRET
+  }
+  
+  if (!config.channelSecret) {
+    return res.status(500).json({
+      success: false,
+      error: 'LINE_CHANNEL_SECRET 未設定'
+    })
+  }
+  
+  middleware(config)(req, res, next)
+}, async (req, res) => {
   try {
     const events = req.body.events
     
@@ -171,9 +195,18 @@ async function handleMessageEvent(event) {
     if (messageType === 'text') {
       messageData.text_content = event.message.text
     } else if (['image', 'video', 'audio', 'file'].includes(messageType)) {
-      // TODO: 實作檔案下載和上傳到 Supabase Storage
-      messageData.file_id = messageId
-      console.log('[檔案訊息] 待實作: 下載並儲存到 Storage')
+      // 下載並儲存檔案到 Supabase Storage
+      try {
+        const fileUrl = await downloadAndSaveLineContent(messageId, messageType, userId)
+        messageData.file_path = fileUrl
+        messageData.file_id = messageId
+        console.log('[檔案訊息] 已儲存:', fileUrl)
+      } catch (fileError) {
+        console.error('[檔案訊息] 儲存失敗:', fileError.message)
+        // 即使檔案儲存失敗，仍然儲存訊息記錄
+        messageData.file_id = messageId
+        messageData.text_content = `[${messageType}] 檔案儲存失敗`
+      }
     } else if (messageType === 'sticker') {
       messageData.text_content = `[貼圖] Package: ${event.message.packageId}, Sticker: ${event.message.stickerId}`
     } else if (messageType === 'location') {
@@ -208,7 +241,7 @@ async function handleMessageEvent(event) {
  */
 async function updateUserProfile(userId) {
   try {
-    const profile = await lineClient.getProfile(userId)
+    const profile = await getLineClient().getProfile(userId)
     const supabase = getSupabase()
     
     await supabase
@@ -224,6 +257,101 @@ async function updateUserProfile(userId) {
     console.log('[用戶管理] Profile 更新成功:', userId)
   } catch (error) {
     console.error('[用戶管理] Profile 更新失敗:', error.message)
+  }
+}
+
+/**
+ * 從 LINE 下載檔案並上傳到 Supabase Storage
+ * @param {string} messageId - LINE 訊息 ID
+ * @param {string} messageType - 訊息類型 (image, video, audio, file)
+ * @param {string} userId - 用戶 ID
+ * @returns {string} Supabase Storage 的公開 URL
+ */
+async function downloadAndSaveLineContent(messageId, messageType, userId) {
+  try {
+    // 1. 從 LINE 下載檔案內容
+    console.log('[檔案下載] 開始下載:', messageId)
+    const stream = await getLineClient().getMessageContent(messageId)
+    
+    // 2. 將 stream 轉為 Buffer
+    const chunks = []
+    for await (const chunk of stream) {
+      chunks.push(chunk)
+    }
+    const buffer = Buffer.concat(chunks)
+    console.log('[檔案下載] 完成，大小:', buffer.length, 'bytes')
+    
+    // 3. 決定檔案路徑和副檔名
+    const timestamp = Date.now()
+    let folder = 'files'
+    let extension = ''
+    
+    switch (messageType) {
+      case 'image':
+        folder = 'images'
+        extension = '.jpg' // LINE 圖片通常是 JPG
+        break
+      case 'video':
+        folder = 'video'
+        extension = '.mp4'
+        break
+      case 'audio':
+        folder = 'audio'
+        extension = '.m4a'
+        break
+      case 'file':
+        folder = 'documents'
+        extension = '' // 保持原始副檔名
+        break
+    }
+    
+    const fileName = `${userId}_${timestamp}_${messageId}${extension}`
+    const filePath = `${folder}/${fileName}`
+    
+    // 4. 上傳到 Supabase Storage
+    const supabase = getSupabase()
+    const { data, error } = await supabase
+      .storage
+      .from('line-files')
+      .upload(filePath, buffer, {
+        contentType: getContentType(messageType),
+        upsert: false
+      })
+    
+    if (error) {
+      throw new Error(`Storage 上傳失敗: ${error.message}`)
+    }
+    
+    // 5. 取得公開 URL
+    const { data: { publicUrl } } = supabase
+      .storage
+      .from('line-files')
+      .getPublicUrl(filePath)
+    
+    console.log('[檔案上傳] 成功:', publicUrl)
+    return publicUrl
+    
+  } catch (error) {
+    console.error('[檔案處理] 錯誤:', error)
+    throw error
+  }
+}
+
+/**
+ * 根據訊息類型取得 Content-Type
+ */
+function getContentType(messageType) {
+  switch (messageType) {
+    case 'image':
+      return 'image/jpeg'
+    case 'video':
+      return 'video/mp4'
+    case 'audio':
+      return 'audio/mp4'
+    case 'file':
+      return 'application/octet-stream'
+    default:
+      return 'application/octet-stream'
   }
 }
 

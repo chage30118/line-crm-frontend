@@ -14,16 +14,38 @@
     </div>
 
     <div class="header-center">
-      <el-tag type="info">
-        客戶總數: {{ totalCustomers }}
-      </el-tag>
-      <el-tag v-if="unreadCount > 0" type="warning">
-        未讀: {{ unreadCount }}
-      </el-tag>
+      <!-- 導航按鈕 -->
+      <div class="nav-buttons">
+        <el-button
+          :class="['nav-btn', { active: currentRoute === '/' }]"
+          @click="handleMenuSelect('/')"
+        >
+          <el-icon><Monitor /></el-icon>
+          <span>對話管理</span>
+        </el-button>
+        <el-button
+          :class="['nav-btn', { active: currentRoute === '/customer-master' }]"
+          @click="handleMenuSelect('/customer-master')"
+        >
+          <el-icon><Document /></el-icon>
+          <span>客戶主檔</span>
+        </el-button>
+      </div>
+
+      <!-- 統計資訊 -->
+      <div class="header-stats">
+        <el-tag type="info">
+          客戶總數: {{ totalCustomers }}
+        </el-tag>
+        <el-tag v-if="unreadCount > 0" type="warning">
+          未讀: {{ unreadCount }}
+        </el-tag>
+      </div>
     </div>
 
     <div class="header-right">
       <el-button
+        v-if="currentRoute === '/'"
         :icon="crmSidebarVisible ? 'Hide' : 'View'"
         @click="uiStore.toggleCRMSidebar()"
       >
@@ -51,16 +73,29 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { ElMessage } from 'element-plus'
 import { useCustomersStore } from '@/stores/customers'
 import { useUIStore } from '@/stores/ui'
+import { Monitor, Document } from '@element-plus/icons-vue'
 
+const router = useRouter()
+const route = useRoute()
 const customersStore = useCustomersStore()
 const uiStore = useUIStore()
 
 const { totalCustomers, unreadCount } = storeToRefs(customersStore)
 const { sidebarCollapsed, crmSidebarVisible } = storeToRefs(uiStore)
+
+// 當前路由
+const currentRoute = computed(() => route.path)
+
+// 選單選擇處理
+const handleMenuSelect = (index) => {
+  router.push(index)
+}
 
 // 重新整理資料
 const refreshData = async () => {
@@ -112,6 +147,47 @@ const refreshData = async () => {
 
 .header-center {
   display: flex;
+  align-items: center;
+  gap: 24px;
+  flex: 1;
+  justify-content: center;
+}
+
+.nav-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.nav-btn {
+  color: rgba(255, 255, 255, 0.9);
+  border-color: rgba(255, 255, 255, 0.3);
+  background-color: transparent;
+  height: 40px;
+  padding: 0 20px;
+  font-size: 15px;
+  transition: all 0.3s;
+}
+
+.nav-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #ffffff;
+}
+
+.nav-btn.active {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: #ffffff;
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.nav-btn .el-icon {
+  margin-right: 6px;
+}
+
+.header-stats {
+  display: flex;
   gap: 12px;
 }
 
@@ -141,6 +217,10 @@ const refreshData = async () => {
   }
 
   .header-center {
+    display: none;
+  }
+
+  .header-right .el-button:not(.el-button.is-circle) span {
     display: none;
   }
 }

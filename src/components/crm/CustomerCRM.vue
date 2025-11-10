@@ -34,8 +34,19 @@ const activeTab = ref('basic')
 
 // 處理更新
 const handleUpdate = async (updates) => {
+  console.log('[CustomerCRM] 收到更新請求:', updates)
+  console.log('[CustomerCRM] 目標客戶 ID:', selectedCustomer.value?.id)
+  
   if (selectedCustomer.value?.id) {
-    await customersStore.updateCustomer(selectedCustomer.value.id, updates)
+    try {
+      await customersStore.updateCustomer(selectedCustomer.value.id, updates)
+      console.log('[CustomerCRM] 更新成功')
+    } catch (error) {
+      console.error('[CustomerCRM] 更新失敗:', error)
+      throw error
+    }
+  } else {
+    console.error('[CustomerCRM] 沒有選中的客戶')
   }
 }
 </script>

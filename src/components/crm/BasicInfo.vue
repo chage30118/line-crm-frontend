@@ -57,8 +57,6 @@
         </el-form-item>
 
         <!-- 分隔線 -->
-        <el-divider content-position="left">LINE 資訊</el-divider>
-
         <el-form-item label="LINE 顯示名稱">
           <el-input v-model="formData.display_name" disabled />
         </el-form-item>
@@ -288,14 +286,21 @@ const saveChanges = async () => {
     // 過濾掉空內容的備註
     const filteredNotes = notesList.value.filter(note => note.content.trim())
     
-    await emit('update', {
+    const updates = {
       erp_bi_code: formData.value.erp_bi_code || null,
       erp_bi_name: formData.value.erp_bi_name || null,
       notes: filteredNotes.length > 0 ? JSON.stringify(filteredNotes) : null
-    })
+    }
+    
+    console.log('[BasicInfo] 準備儲存:', updates)
+    
+    await emit('update', updates)
+    
+    console.log('[BasicInfo] 儲存完成')
     ElMessage.success('客戶資訊更新成功')
   } catch (error) {
-    ElMessage.error('更新失敗')
+    console.error('[BasicInfo] 儲存失敗:', error)
+    ElMessage.error('更新失敗: ' + error.message)
   } finally {
     saving.value = false
   }

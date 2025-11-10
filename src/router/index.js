@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Dashboard from '@/views/Dashboard.vue'
+import CustomerMaster from '@/views/CustomerMaster.vue'
 
 const routes = [
   {
@@ -8,6 +9,14 @@ const routes = [
     component: Dashboard,
     meta: {
       title: 'LINE CRM 系統'
+    }
+  },
+  {
+    path: '/customer-master',
+    name: 'CustomerMaster',
+    component: CustomerMaster,
+    meta: {
+      title: '客戶主檔維護 - LINE CRM'
     }
   }
 ]

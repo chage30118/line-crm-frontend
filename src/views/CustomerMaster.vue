@@ -7,13 +7,6 @@
       <!-- 頁面標題 -->
       <div class="page-header">
         <div class="header-left">
-          <el-button 
-            :icon="ArrowLeft" 
-            @click="handleBack"
-            class="back-btn"
-          >
-            返回對話管理
-          </el-button>
           <div class="title-group">
             <h1 class="page-title">
               <el-icon><Document /></el-icon>
@@ -201,10 +194,7 @@ onMounted(async () => {
   }
 })
 
-// 返回對話管理
-function handleBack() {
-  router.push('/')
-}
+
 
 // 搜尋處理
 function handleSearch() {
